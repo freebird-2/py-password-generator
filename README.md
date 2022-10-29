@@ -1,4 +1,7 @@
 # py-password-generator
+A simple GUI password generator.
+
+Built with Python and Tcl/Tk.
 ## Instructions
 ### Option 1
 Run `pgen.py` like any other Python script: from the command line, in an IDE, etc.
