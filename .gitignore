@@ -1,0 +1,6 @@
+venv/
+build/
+dist/
+.idea/dictionaries/
+__pycache__/
+*.spec
