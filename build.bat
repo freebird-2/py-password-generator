@@ -1,4 +1,4 @@
-.\venv\Scripts\pyinstaller.exe ^
+.venv\Scripts\pyinstaller.exe ^
     --noconfirm ^
     --noconsole ^
     --onefile ^

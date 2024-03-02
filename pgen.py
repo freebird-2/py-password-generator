@@ -9,11 +9,13 @@ logging.basicConfig(level=logging.DEBUG, format='%(funcName)s (%(lineno)d) :\n%(
 
 WINDOW_TITLE = 'Password Generator'
 
-def generate_password(chars: set[str], length: int) -> str:
-    return ''.join(random.choices(list(chars), k=length))
+def random_string(chars: set[str], length: int, repeat: bool) -> str:
+    char_list = list(chars)
+    result = random.choices(char_list, k=length) if repeat else random.sample(char_list, length)
+    return ''.join(result)
 
 def is_integer(value: str) -> bool:
-    return value == '' or re.search(r'^\d+$', value) is not None
+    return re.search(r'^\d+$', value) is not None
 
 class Display(ttk.Frame):
 
@@ -41,9 +43,6 @@ class Display(ttk.Frame):
         self.clipboard_clear()
         self.clipboard_append(self.text_var.get())
 
-    def set_result(self, result: str):
-        self.text_var.set(result)
-
 class Generator(ttk.Frame):
 
     DEFAULT_PASSWORD_LENGTH = 20
@@ -57,6 +56,7 @@ class Generator(ttk.Frame):
         self.lowercase_var = tk.IntVar(value=1)
         self.digits_var = tk.IntVar(value=1)
         self.symbols_var = tk.IntVar(value=1)
+        self.repeat_var = tk.IntVar(value=1)
 
         self.include_label = ttk.Label(
             self,
@@ -64,7 +64,6 @@ class Generator(ttk.Frame):
         )
         self.include_label_frame = ttk.LabelFrame(
             self,
-            text='Settings',
             labelwidget=self.include_label
         )
         self.length_frame = ttk.Frame(self)
@@ -77,13 +76,14 @@ class Generator(ttk.Frame):
             self.length_frame,
             text='+',
             width=2,
-            command=lambda: self.length_var.set(str(int(self.length_var.get()) + 1))
+            command=lambda: self.change_length_input(1)
         )
         self.decrement_button = ttk.Button(
             self.length_frame,
             text='-',
             width=2,
-            command=lambda: self.length_var.set(str(int(self.length_var.get()) - 1))
+            command=lambda: self.change_length_input(-1)
+
         )
         self.length_label = ttk.Label(
             self.length_frame,
@@ -93,7 +93,7 @@ class Generator(ttk.Frame):
             self.length_frame,
             width=5,
             validate='key',
-            validatecommand=(self.register(is_integer), '%P'),
+            validatecommand=(self.register(self.validate_length_input), '%P'),
             textvariable=self.length_var
         )
         self.length_entry.insert(tk.END, str(self.DEFAULT_PASSWORD_LENGTH))
@@ -117,6 +117,11 @@ class Generator(ttk.Frame):
             text='Symbols',
             variable=self.symbols_var
         )
+        self.repeat_checkbox = ttk.Checkbutton(
+            self,
+            text='Allow repeated characters',
+            variable=self.repeat_var
+        )
 
 
         self.length_label.grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
@@ -131,24 +136,36 @@ class Generator(ttk.Frame):
 
 
         self.include_label_frame.grid(row=0, column=0, sticky=tk.W)
-        self.length_frame.grid(row=5, column=0, sticky=tk.W, pady=(15, 0))
-        self.generate_button.grid(row=6, column=0, sticky=tk.W, pady=(15, 0))
+        self.repeat_checkbox.grid(row=5, column=0, sticky=tk.W, pady=(15, 0))
+        self.length_frame.grid(row=6, column=0, sticky=tk.W, pady=(15, 0))
+        self.generate_button.grid(row=7, column=0, sticky=tk.W, pady=(15, 0))
+
+    def get_current_length(self) -> int:
+        length_str = self.length_entry.get()
+        return 0 if length_str == "" else int(length_str)
+
+    def change_length_input(self, change: int) -> None:
+        length = self.get_current_length()
+        length += change
+        if length >= 0:
+            self.length_var.set(str(length))
+
+    def validate_length_input(self, length_input: str) -> bool:
+        return length_input == "" or is_integer(length_input)
 
     def generate_password(self) -> None:
-        length = 0 if self.length_entry.get() == '' else int(self.length_entry.get())
         characters = set()
-        if self.uppercase_var.get() == 1:
+        if self.uppercase_var.get():
             characters.update(string.ascii_uppercase)
-        if self.lowercase_var.get() == 1:
+        if self.lowercase_var.get():
             characters.update(string.ascii_lowercase)
-        if self.digits_var.get() == 1:
+        if self.digits_var.get():
             characters.update(string.digits)
-        if self.symbols_var.get() == 1:
+        if self.symbols_var.get():
             characters.update(string.punctuation)
-        if len(characters) == 0:
-            self.result_var.set('')
-        else:
-            self.result_var.set(''.join(random.choices(list(characters), k=length)))
+        if len(characters) > 0:
+            password = random_string(characters, self.get_current_length(), bool(self.repeat_var.get()))
+            self.result_var.set(password)
 
 class PasswordGenerator(ttk.Frame):
 
